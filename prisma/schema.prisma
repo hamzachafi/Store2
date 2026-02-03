@@ -42,20 +42,21 @@ model Category {
 }
 
 model Product {
-  id          String         @id @default(cuid())
+  id          String        @id @default(cuid())
   name        String
-  slug        String         @unique
+  slug        String        @unique
   description String
-  price       Decimal        @db.Decimal(10,2)
-  sku         String?        @unique
+  price       Decimal       @db.Decimal(10,2)
+  sku         String?       @unique
   images      ProductImage[]
   categoryId  String?
-  category    Category?      @relation(fields: [categoryId], references: [id])
-  stock       Int            @default(0)
-  active      Boolean        @default(true)
+  category    Category?     @relation(fields: [categoryId], references: [id])
+  stock       Int           @default(0)
+  active      Boolean       @default(true)
   variants    Variant[]
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  reviews     Review[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 model Variant {
@@ -83,7 +84,7 @@ model Order {
   total     Decimal     @db.Decimal(10,2)
   status    OrderStatus @default(PENDING)
   items     OrderItem[]
-  address   Address
+  address   Address?
   payment   Payment?
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
@@ -111,7 +112,7 @@ model OrderItem {
 
 model Address {
   id        String  @id @default(cuid())
-  orderId   String  @unique
+  orderId   String? @unique
   fullName  String
   phone     String
   line1     String
@@ -120,18 +121,18 @@ model Address {
   region    String?
   country   String
   postal    String?
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order     Order?  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model Payment {
   id         String        @id @default(cuid())
-  orderId    String        @unique
+  orderId    String?       @unique
   method     String
   providerId String?
   amount     Decimal       @db.Decimal(10,2)
   currency   String        @default("MAD")
   status     PaymentStatus @default(PENDING)
-  order      Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order      Order?        @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 enum PaymentStatus {
@@ -164,7 +165,7 @@ model ContentBlock {
 model Coupon {
   id       String   @id @default(cuid())
   code     String   @unique
-  type     String   // percent | fixed
+  type     String
   value    Decimal  @db.Decimal(10,2)
   active   Boolean  @default(true)
   startsAt DateTime?
