@@ -1,0 +1,183 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  role      Role     @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  orders    Order[]
+  reviews   Review[]
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+  STAFF
+}
+
+model Settings {
+  id             Int     @id @default(1)
+  siteName       String  @default("store2")
+  primaryColor   String  @default("#1d4ed8")
+  secondaryColor String  @default("#0ea5e9")
+  logoUrl        String?
+  currency       String  @default("MAD")
+  codEnabled     Boolean @default(true)
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String
+  slug     String    @unique
+  products Product[]
+}
+
+model Product {
+  id          String         @id @default(cuid())
+  name        String
+  slug        String         @unique
+  description String
+  price       Decimal        @db.Decimal(10,2)
+  sku         String?        @unique
+  images      ProductImage[]
+  categoryId  String?
+  category    Category?      @relation(fields: [categoryId], references: [id])
+  stock       Int            @default(0)
+  active      Boolean        @default(true)
+  variants    Variant[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Variant {
+  id         String   @id @default(cuid())
+  productId  String
+  name       String
+  priceDelta Decimal  @db.Decimal(10,2) @default(0)
+  stock      Int      @default(0)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  url       String
+  alt       String?
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  userId    String?
+  user      User?       @relation(fields: [userId], references: [id])
+  email     String
+  total     Decimal     @db.Decimal(10,2)
+  status    OrderStatus @default(PENDING)
+  items     OrderItem[]
+  address   Address
+  payment   Payment?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+enum OrderStatus {
+  PENDING
+  AWAITING_PAYMENT
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  productId String
+  name      String
+  price     Decimal  @db.Decimal(10,2)
+  quantity  Int
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Address {
+  id        String  @id @default(cuid())
+  orderId   String  @unique
+  fullName  String
+  phone     String
+  line1     String
+  line2     String?
+  city      String
+  region    String?
+  country   String
+  postal    String?
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id         String        @id @default(cuid())
+  orderId    String        @unique
+  method     String
+  providerId String?
+  amount     Decimal       @db.Decimal(10,2)
+  currency   String        @default("MAD")
+  status     PaymentStatus @default(PENDING)
+  order      Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model Page {
+  id        String        @id @default(cuid())
+  title     String
+  slug      String        @unique
+  published Boolean       @default(true)
+  blocks    ContentBlock[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model ContentBlock {
+  id     String @id @default(cuid())
+  pageId String
+  kind   String
+  data   Json
+  order  Int    @default(0)
+  page   Page   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+}
+
+model Coupon {
+  id       String   @id @default(cuid())
+  code     String   @unique
+  type     String   // percent | fixed
+  value    Decimal  @db.Decimal(10,2)
+  active   Boolean  @default(true)
+  startsAt DateTime?
+  endsAt   DateTime?
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String?
+  productId String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
